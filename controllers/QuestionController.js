@@ -5,6 +5,45 @@ const allowedTypes = ['Text', 'Radio', 'Checkbox', 'Dropdown', 'Email'];
 
 class QuestionController {
 
+    async index(req, res) { 
+
+        try {
+
+            if (!req.params.id) {
+                throw {
+                    code: 400,
+                    message: 'Required form id !'
+            } }
+
+            if(!mongoose.Types.ObjectId.isValid(req.params.id)) { 
+                throw {
+                    code: 400,
+                    message: 'Invalid Id'
+                }
+            }
+            
+            const form = await Form.findOne({ _id: req.params.id, userId: req.jwt.id })
+            
+            if (!form) { throw { code: 400, message: 'Form not found !' } } 
+
+            res.status(200)
+                .json({
+                        status: true,
+                        message: 'Form Found',
+                        form
+                    })
+
+        } catch (error) {
+            res.status(code.err || 500)
+                .json({
+                    status: false,
+                    message: error.message
+                })
+        }
+
+    }
+
+
     async store(req, res) { 
         try {
             if (!req.params.id) {
@@ -40,7 +79,7 @@ class QuestionController {
             if (!form) {
                 throw {
                     status: 400,
-                    message: 'Form failed update'
+                    message: 'Question failed update'
                 }
             }
             res.status(200)
@@ -135,6 +174,64 @@ class QuestionController {
             })
         }
      }
+
+    
+     async destroy(req, res) { 
+        try {
+              if (!req.params.id) {
+                throw {
+                    code: 404,
+                    message: 'Required form id'
+                }
+            }
+             if (!req.params.questionId) {
+                throw {
+                    code: 404,
+                    message: 'Required question id'
+                }
+            }
+            if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+                throw {
+                    status: 400,
+                    message: 'Invalid id'
+                }
+            } 
+            if (!mongoose.Types.ObjectId.isValid(req.params.questionId)) {
+                throw {
+                    status: 400,
+                    message: 'Invalid id'
+                }
+            } 
+
+            //update form
+            const form = await Form.findOneAndUpdate({
+                    _id: req.params.id,
+                    userId: req.jwt.id
+                }, {
+                    $pull: { questions: { id: new mongoose.Types.ObjectId(req.params.questionId) } }
+                }, {
+                    new: true
+            })
+            if (!form) {
+                throw {
+                    status: 400,
+                    message: 'Question failed delete'
+                }
+            }
+            res.status(200)
+                .json({
+                    status: true,
+                    message: 'Delete question successfully',
+                    form
+                })
+
+        } catch (error) {
+            res.status(error.code || 500).json({
+                status: false,
+                message: error.message
+            })
+        }
+    }
 
 }
 
